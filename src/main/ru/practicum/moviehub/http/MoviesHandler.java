@@ -1,7 +1,5 @@
 package ru.practicum.moviehub.http;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 import ru.practicum.moviehub.api.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
@@ -11,12 +9,13 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MoviesHandler extends BaseHttpHandler {
     private MoviesStore moviesStore;
-    private Gson gson;
+    int idMovieList = 0;
 
     public MoviesHandler(MoviesStore moviesStore) {
         this.moviesStore = moviesStore;
@@ -27,22 +26,22 @@ public class MoviesHandler extends BaseHttpHandler {
         String method = exchange.getRequestMethod();
         String path = exchange.getRequestURI().getPath();
         String[] pathArray = path.split("/");
-        gson = new GsonBuilder().registerTypeAdapter(LocalDate.class, new LocalDateAdapter()).create();
         String queryYear = exchange.getRequestURI().getQuery();
 
         switch (method) {
             case "GET" -> {
                 if (queryYear != null) {
                     int qYear = Integer.parseInt(queryYear.split("=")[1]);
-                    List<Movie> findeMovie = moviesStore.getFromStore().stream()
-                            .filter(film -> film.getYear() == qYear)
+                    List<Movie> findeMovie = moviesStore.getFromStore().entrySet().stream()
+                            .map(Map.Entry::getValue)
+                            .filter(movie -> movie.getYear() == qYear)
                             .collect(Collectors.toList());
                     sendJson(exchange, 200, gson.toJson(findeMovie));
                 }
                 if (pathArray.length > 2) {
                     try {
-                        int id = Integer.parseInt(pathArray[2]) - 1;
-                        if (id < 0 || id >= moviesStore.getFromStore().size()) {
+                        int id = Integer.parseInt(pathArray[2]);
+                        if (!moviesStore.getFromStore().containsKey(id)) {
                             sendJson(exchange, 404, "Фильм не найден");
                         } else {
                             sendJson(exchange, 200, gson.toJson(moviesStore.getFromStore().get(id)));
@@ -53,12 +52,12 @@ public class MoviesHandler extends BaseHttpHandler {
                         throw new RuntimeException(e);
                     }
                 } else {
-                    sendJson(exchange, 200, gson.toJson(moviesStore.getFromStore()));
+                    sendJson(exchange, 200, gson.toJson(moviesStore.getFromStore().values()));
                 }
             }
             case "POST" -> {
-                String contenType = exchange.getRequestHeaders().getFirst("Content-type");
-                if (!contenType.equals("application/json; charset=UTF-8")) {
+                String contentType = exchange.getRequestHeaders().getFirst("Content-type");
+                if (contentType != null && !contentType.toLowerCase().startsWith(CT_JSON.toLowerCase())) {
                     sendJson(exchange, 415, "Ошибка заголовка или ключа");
                     return;
                 }
@@ -67,15 +66,16 @@ public class MoviesHandler extends BaseHttpHandler {
             case "DELETE" -> {
                 if (pathArray.length > 2) {
                     if (pathArray[2].equalsIgnoreCase("all")) {
-                        moviesStore.getFromStore().clear();
+                        moviesStore.clearMap();
+                        idMovieList = 0;
                         sendNoContent(exchange);
                     }
                     try {
                         int id = Integer.parseInt(pathArray[2]);
-                        if (moviesStore.getFromStore().size() < id) {
+                        if (!moviesStore.getFromStore().containsKey(id)) {
                             sendJson(exchange, 404, "Фильм не найден");
                         } else {
-                            moviesStore.getFromStore().remove(id - 1);
+                            moviesStore.getFromStore().remove(id);
                             sendNoContent(exchange);
                         }
                     } catch (NumberFormatException e) {
@@ -97,16 +97,20 @@ public class MoviesHandler extends BaseHttpHandler {
             Movie movie = (Movie) movieOptional.get();
             int curentYear = LocalDate.now().getYear() + 1;
             int year = movie.getYear();
-            if (movie.getTitle().isBlank() || movie.getTitle().length() > 100 || year < 1888 || year > curentYear) {
-                List<String> errors = new ArrayList<>();
-                errors.add("название не должно быть пустым");
-                errors.add("год должен быть между 1888 и 2026");
+
+            List<String> errors = new ArrayList<>();
+            if (movie.getTitle().isBlank()) errors.add("название не должно быть пустым");
+            if (movie.getTitle().length() > 100) errors.add("слишком длинное название");
+            if (year < 1888 || year > curentYear) errors.add("год должен быть между 1888 и 2026");
+            if (!errors.isEmpty()) {
                 ErrorResponse message = new ErrorResponse("Ошибка валидации", errors);
                 sendJson(exchange, 422, errorToJson(message));
                 return;
             }
-            moviesStore.addToStore(movie);
-            sendJson(exchange, 201, "");
+            idMovieList++;
+            moviesStore.addToStore(idMovieList, movie);
+            sendJson(exchange, 201, idMovieList + ": "
+                    + gson.toJson(moviesStore.getFromStore().get(idMovieList)));
         }
     }
 

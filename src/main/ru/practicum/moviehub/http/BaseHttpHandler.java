@@ -14,8 +14,15 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Optional;
 
-abstract class BaseHttpHandler implements HttpHandler {
-    protected static final String CT_JSON = "application/json; charset=UTF-8"; // !!! Укажите содержимое заголовка Content-Type
+public abstract class BaseHttpHandler implements HttpHandler {
+    protected static final String CT_JSON = "application/json; charset=UTF-8";
+    protected static Gson gson;
+
+    public BaseHttpHandler() {
+        gson = new GsonBuilder()
+                .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+                .create();
+    }
 
     protected void sendJson(HttpExchange ex, int status, String json) throws IOException {
         byte[] responseBytes = json.getBytes(StandardCharsets.UTF_8);
@@ -24,6 +31,7 @@ abstract class BaseHttpHandler implements HttpHandler {
         try (OutputStream os = ex.getResponseBody()) {
             os.write(responseBytes);
         }
+        ex.close();
     }
 
     protected void sendNoContent(HttpExchange ex) throws IOException {
@@ -32,16 +40,12 @@ abstract class BaseHttpHandler implements HttpHandler {
     }
 
     protected Optional<Movie> getJson(HttpExchange exchange) throws IOException {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
-                .create();
         InputStream inputStream = exchange.getRequestBody();
         String body = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         return Optional.of(gson.fromJson(body, Movie.class));
     }
 
     protected String errorToJson(ErrorResponse error) {
-        Gson gson = new Gson();
         return gson.toJson(error);
     }
 }

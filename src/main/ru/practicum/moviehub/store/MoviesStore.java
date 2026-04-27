@@ -2,22 +2,25 @@ package ru.practicum.moviehub.store;
 
 import ru.practicum.moviehub.model.Movie;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
 
 public class MoviesStore {
-    private List<Movie> movies;
+    private HashMap<Integer, Movie> movies;
 
     public MoviesStore() {
-        movies = new LinkedList<>();
+        movies = new HashMap();
     }
 
-    public void addToStore(Movie movie) {
-        movies.add(movie);
+    public void addToStore(int id, Movie movie) {
+        movies.put(id, movie);
     }
 
-    public List<Movie> getFromStore() {
+    public HashMap<Integer, Movie> getFromStore() {
         return movies;
+    }
+
+    public void clearMap() {
+        movies.clear();
     }
 
     @Override

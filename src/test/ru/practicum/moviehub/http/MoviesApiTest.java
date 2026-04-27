@@ -97,7 +97,7 @@ public class MoviesApiTest {
         HttpResponse responseYear2028 = postRequest(year2028);
         HttpResponse responseYear2010 = postRequest(year2010);
 
-        assertEquals(422, responseYear1887.statusCode(), "Год указан НЕ верно должно быть 201");
+        assertEquals(422, responseYear1887.statusCode(), "Год указан НЕ верно должно быть 422");
         assertEquals(201, responseYear1888.statusCode(), "Год указан ВЕРНО должно быть 201");
         assertEquals(201, responseYear2027.statusCode(), "Год указан ВЕРНО должно быть 201");
         assertEquals(422, responseYear2028.statusCode(), "Год указан НЕ верно должно быть 201");
@@ -143,10 +143,12 @@ public class MoviesApiTest {
         for (int i = 1; i < 5; i++) {
             postRequest(String.format("{\"title\": \"Властелин морей:%s\", \"year\": \"2010\"}", i));
         }
+        System.out.println(getByID(3));
 
         HttpResponse respString = delByID(idString);
         HttpResponse respNoCorrect = delByID(idNoCorrect);
         HttpResponse respCorrect = delByID(idCorrect);
+
 
         assertEquals(204, respCorrect.statusCode(), "Фильм удален");
 
@@ -183,7 +185,7 @@ public class MoviesApiTest {
         List<Movie> listMovie = gson.fromJson(response1.body().toString(), new ListOfMoviesTypeToken().getType());
         assertEquals(1, listMovie.size(), "В списке должно быть 1 фильм 2010 года");
 
-        delByID(2);
+        delByID(3);
         HttpResponse responseEmtyList = client.send(request, handler);
 
         List<Movie> emtyList = gson.fromJson(responseEmtyList.body().toString(), new ListOfMoviesTypeToken().getType());
