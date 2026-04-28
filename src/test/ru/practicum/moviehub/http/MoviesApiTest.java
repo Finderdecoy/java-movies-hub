@@ -53,7 +53,6 @@ public class MoviesApiTest {
     @Test
     void getMovies_whenEmpty_returnsEmptyArray() throws IOException, InterruptedException {
         HttpRequest req = HttpRequest.newBuilder().GET().uri(URI.create(BASE + "/movies")).build();
-
         HttpResponse.BodyHandler<String> responseBodyHandler = HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8);
         HttpResponse<String> resp = client.send(req, responseBodyHandler);
         assertEquals(200, resp.statusCode(), "GET /movies должен вернуть 200");
