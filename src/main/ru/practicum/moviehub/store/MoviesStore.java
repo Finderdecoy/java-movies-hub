@@ -15,11 +15,12 @@ public class MoviesStore {
 
     public Movie addToStore(Movie movie) {
         id++;
+        movie.setId(id);
         movies.put(id, movie);
         return movie;
     }
 
-    public Collection<Movie> getFromStore() throws NullPointerException {
+    public Collection<Movie> getFromStore() {
         return movies.values();
     }
 

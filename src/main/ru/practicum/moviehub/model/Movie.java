@@ -5,6 +5,11 @@ import java.time.LocalDate;
 public class Movie {
     private String title;
     private LocalDate year;
+    private int id;
+
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public String getTitle() {
         return title;

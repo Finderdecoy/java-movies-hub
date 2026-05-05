@@ -40,8 +40,9 @@ public class MoviesHandler extends BaseHttpHandler {
                 if (pathArray.length > 2) {
                     try {
                         int id = Integer.parseInt(pathArray[2]);
-                        if (moviesStore.getMovie(id) != null) {
-                            sendJson(exchange, 200, gson.toJson(moviesStore.getMovie(id)));
+                        Movie movie = moviesStore.getMovie(id);
+                        if (movie != null) {
+                            sendJson(exchange, 200, gson.toJson(movie));
                         } else {
                             sendJson(exchange, 404, "Фильм не найден");
                         }
